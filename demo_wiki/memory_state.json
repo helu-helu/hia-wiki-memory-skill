@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-07-01T17:22:48.015628",
+  "stats": {
+    "total_files": 2,
+    "hot": 1,
+    "warm": 1,
+    "cold": 0,
+    "review": 0,
+    "total_size_kb": 0.37
+  },
+  "tiers": {
+    "hot": [
+      {
+        "path": "raw/arch_design.md",
+        "title": "arch_design",
+        "author": "System",
+        "status": "active",
+        "tags": [
+          "architecture",
+          "core"
+        ],
+        "last_updated": "2026-07-01",
+        "size_kb": 0.24
+      }
+    ],
+    "warm": [
+      {
+        "path": "raw/api_specs.md",
+        "title": "api_specs",
+        "author": "QA",
+        "status": "active",
+        "tags": [
+          "api"
+        ],
+        "last_updated": "2026-07-01",
+        "size_kb": 0.13
+      }
+    ],
+    "cold": []
+  },
+  "needs_review": {},
+  "context_inventory": {
+    "architecture": {
+      "total": 1,
+      "hot": 1,
+      "warm": 0,
+      "cold": 0,
+      "files": [
+        {
+          "path": "raw/arch_design.md",
+          "title": "arch_design",
+          "author": "System",
+          "status": "active",
+          "tags": [
+            "architecture",
+            "core"
+          ],
+          "last_updated": "2026-07-01",
+          "size_kb": 0.24
+        }
+      ]
+    },
+    "core": {
+      "total": 1,
+      "hot": 1,
+      "warm": 0,
+      "cold": 0,
+      "files": [
+        {
+          "path": "raw/arch_design.md",
+          "title": "arch_design",
+          "author": "System",
+          "status": "active",
+          "tags": [
+            "architecture",
+            "core"
+          ],
+          "last_updated": "2026-07-01",
+          "size_kb": 0.24
+        }
+      ]
+    },
+    "api": {
+      "total": 1,
+      "hot": 0,
+      "warm": 1,
+      "cold": 0,
+      "files": [
+        {
+          "path": "raw/api_specs.md",
+          "title": "api_specs",
+          "author": "QA",
+          "status": "active",
+          "tags": [
+            "api"
+          ],
+          "last_updated": "2026-07-01",
+          "size_kb": 0.13
+        }
+      ]
+    }
+  }
+}

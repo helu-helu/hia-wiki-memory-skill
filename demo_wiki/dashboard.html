@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hia Wiki - Memory Dashboard</title>
+<style>
+  :root {
+    --ivory:  #FAF9F5;
+    --paper:  #FFFFFF;
+    --slate:  #141413;
+    --clay:   #D97757;
+    --clay-d: #B85C3E;
+    --oat:    #E3DACC;
+    --olive:  #788C5D;
+    --g100:   #F0EEE6;
+    --g200:   #E6E3DA;
+    --g300:   #D1CFC5;
+    --g500:   #87867F;
+    --g700:   #3D3D3A;
+    --serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+    
+    --hot-color: #E03131;
+    --warm-color: #F08C00;
+    --cold-color: #1864AB;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ivory);
+    color: var(--slate);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  header.masthead {
+    padding: 20px 0 40px;
+    border-bottom: 1.5px solid var(--g300);
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--g500);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .eyebrow::before { content: ""; width: 24px; height: 1.5px; background: var(--clay); }
+  
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1.1;
+    margin: 0 0 8px;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 60px;
+  }
+  
+  .stat-card {
+    background: var(--paper);
+    border: 1.5px solid var(--g300);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  }
+  .stat-card .label { font-family: var(--mono); font-size: 12px; color: var(--g500); text-transform: uppercase; }
+  .stat-card .val { font-family: var(--serif); font-size: 36px; font-weight: 500; margin-top: 8px; }
+  
+  .stat-card.hot .val { color: var(--hot-color); }
+  .stat-card.warm .val { color: var(--warm-color); }
+  .stat-card.cold .val { color: var(--cold-color); }
+  .stat-card.review .val { color: var(--clay); }
+  
+  .sec-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .sec-head h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 27px;
+    margin: 0;
+  }
+  
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    background: var(--paper);
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1.5px solid var(--g300);
+    margin-bottom: 24px;
+  }
+  .search-box {
+    padding: 8px 16px;
+    border: 1.5px solid var(--g300);
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    width: 300px;
+    outline: none;
+  }
+  .search-box:focus { border-color: var(--slate); }
+  
+  .filters {
+    display: flex;
+    gap: 8px;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border: 1.5px solid var(--g300);
+    border-radius: 99px;
+    background: transparent;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--g500);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .filter-btn.active.hot { background: var(--hot-color); color: white; border-color: var(--hot-color); }
+  .filter-btn.active.warm { background: var(--warm-color); color: white; border-color: var(--warm-color); }
+  .filter-btn.active.cold { background: var(--cold-color); color: white; border-color: var(--cold-color); }
+
+  /* Chart Bar */
+  .chart-container {
+    margin-bottom: 30px;
+  }
+  .chart-bar {
+    display: flex;
+    width: 100%;
+    height: 12px;
+    border-radius: 99px;
+    overflow: hidden;
+    background: var(--g200);
+  }
+  .chart-segment {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+
+  /* Accordion Layout */
+  .accordion-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 60px;
+  }
+  
+  details.tag-accordion {
+    background: var(--paper);
+    border: 1.5px solid var(--g300);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+  }
+  details.tag-accordion[open] {
+    border-color: var(--slate);
+  }
+  
+  summary.tag-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+  }
+  summary.tag-summary::-webkit-details-marker { display: none; }
+  summary.tag-summary:hover { background: var(--ivory); }
+  
+  .tag-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .tag-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  .tag-name {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--slate);
+  }
+  
+  .tag-stats-pill {
+    display: flex;
+    gap: 12px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--g500);
+    background: var(--ivory);
+    padding: 6px 16px;
+    border-radius: 99px;
+    border: 1px solid var(--g200);
+  }
+  .tag-stats-pill span.h { color: var(--hot-color); font-weight: 500; }
+  .tag-stats-pill span.w { color: var(--warm-color); font-weight: 500; }
+  .tag-stats-pill span.c { color: var(--cold-color); font-weight: 500; }
+
+  /* Scroll list inside details */
+  .details-content {
+    padding: 0 20px 20px 20px;
+    border-top: 1px solid var(--g200);
+    background: var(--paper);
+  }
+  .scroll-list {
+    max-height: 250px;
+    overflow-y: auto;
+    padding-top: 12px;
+    padding-right: 8px;
+  }
+  .scroll-list::-webkit-scrollbar { width: 6px; }
+  .scroll-list::-webkit-scrollbar-track { background: transparent; }
+  .scroll-list::-webkit-scrollbar-thumb { background: var(--g300); border-radius: 4px; }
+  
+  .file-item {
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px dashed var(--g200);
+    padding-bottom: 8px;
+  }
+  .file-item:last-child { border-bottom: none; }
+  
+  .file-item .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .file-item .path { color: var(--slate); font-family: var(--mono); font-size: 13px; word-break: break-all; }
+  .file-item .date { color: var(--g500); font-size: 11px; white-space: nowrap; margin-left: 12px; }
+  .file-item .tier-badge {
+    display: inline-block;
+    width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 6px;
+  }
+  .file-item[data-tier="hot"] .tier-badge { background: var(--hot-color); }
+  .file-item[data-tier="warm"] .tier-badge { background: var(--warm-color); }
+  .file-item[data-tier="cold"] .tier-badge { background: var(--cold-color); }
+  
+  .empty-msg {
+    font-size: 13px;
+    color: var(--g500);
+    font-style: italic;
+    padding: 12px 0;
+    display: none;
+  }
+
+  /* Review Grid (Kept original styling for Action Required section) */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; margin-bottom: 60px; }
+  .card { display: flex; flex-direction: column; background: var(--paper); border: 1.5px solid var(--g300); border-radius: 14px; padding: 20px; }
+  .card-tag { font-family: var(--mono); font-size: 12px; background: var(--g100); padding: 4px 10px; border-radius: 999px; display: inline-block; margin-bottom: 12px; color: var(--slate); font-weight: 600; border: 1px solid var(--g300); }
+
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">Hia System</div>
+    <h1>Agent Memory <em>Dashboard</em></h1>
+    <div style="margin-top: 10px; color: var(--g500); font-family: var(--mono); font-size: 13px;">
+      Last Sync: 2026-07-01 17:22 | Total Size: 0.37 KB
+    </div>
+  </header>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Total Files</div>
+      <div class="val">2</div>
+    </div>
+    <div class="stat-card hot">
+      <div class="label">Hot Tier</div>
+      <div class="val">1</div>
+    </div>
+    <div class="stat-card warm">
+      <div class="label">Warm Tier</div>
+      <div class="val">1</div>
+    </div>
+    <div class="stat-card cold">
+      <div class="label">Cold Tier</div>
+      <div class="val">0</div>
+    </div>
+    <div class="stat-card review" style="border-color: var(--clay); background: #FFF5F0;">
+      <div class="label" style="color: var(--clay-d);">Needs Rewarm</div>
+      <div class="val">0</div>
+    </div>
+  </div>
+
+  <div class="sec-head">
+    <h2>🔥 Knowledge Review (Action Required)</h2>
+  </div>
+  <div class="grid">
+<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--g500); border: 1.5px dashed var(--g300); border-radius: 14px;">All knowledge is up to date!</div>
+  </div>
+
+  <div class="sec-head" style="margin-top: 60px;">
+    <h2>🗂️ Context Inventory</h2>
+  </div>
+  
+  <div class="chart-container">
+    <div class="chart-bar">
+      <div class="chart-segment" style="width: 33.33333333333333%; background-color: #D97757;" title="#architecture: 1 files (33.3%)"></div>
+<div class="chart-segment" style="width: 33.33333333333333%; background-color: #1864AB;" title="#core: 1 files (33.3%)"></div>
+<div class="chart-segment" style="width: 33.33333333333333%; background-color: #F08C00;" title="#api: 1 files (33.3%)"></div>
+
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="searchInput" class="search-box" placeholder="Search files or tags...">
+    <div class="filters">
+      <button class="filter-btn active hot" data-tier="hot">Hot</button>
+      <button class="filter-btn active warm" data-tier="warm">Warm</button>
+      <button class="filter-btn active cold" data-tier="cold">Cold</button>
+    </div>
+  </div>
+  
+  <div class="accordion-group" id="inventoryGroup">
+
+    <details class="tag-accordion" data-tag="architecture" style="">
+      <summary class="tag-summary">
+        <div class="tag-title-wrap">
+          <div class="tag-color-dot" style="background-color: #D97757;"></div>
+          <span class="tag-name">#architecture</span>
+        </div>
+        <div class="tag-stats-pill">
+          <span>1 Total</span>
+          <span class="h">1 Hot</span>
+          <span class="w">0 Warm</span>
+          <span class="c">0 Cold</span>
+          <span class="visible-count" style="display:none; color:var(--slate); font-weight:bold; border-left: 1px solid var(--g300); padding-left: 12px;"></span>
+        </div>
+      </summary>
+      <div class="details-content">
+        <div class="empty-msg">No files match the current filters.</div>
+        <div class="scroll-list">
+
+          <div class="file-item inv-file" data-tier="hot" data-name="arch_design.md">
+            <div class="top">
+              <div><span class="tier-badge"></span><span class="path">arch_design.md</span></div>
+              <span class="date">2026-07-01</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+    <details class="tag-accordion" data-tag="core" style="">
+      <summary class="tag-summary">
+        <div class="tag-title-wrap">
+          <div class="tag-color-dot" style="background-color: #1864AB;"></div>
+          <span class="tag-name">#core</span>
+        </div>
+        <div class="tag-stats-pill">
+          <span>1 Total</span>
+          <span class="h">1 Hot</span>
+          <span class="w">0 Warm</span>
+          <span class="c">0 Cold</span>
+          <span class="visible-count" style="display:none; color:var(--slate); font-weight:bold; border-left: 1px solid var(--g300); padding-left: 12px;"></span>
+        </div>
+      </summary>
+      <div class="details-content">
+        <div class="empty-msg">No files match the current filters.</div>
+        <div class="scroll-list">
+
+          <div class="file-item inv-file" data-tier="hot" data-name="arch_design.md">
+            <div class="top">
+              <div><span class="tier-badge"></span><span class="path">arch_design.md</span></div>
+              <span class="date">2026-07-01</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+    <details class="tag-accordion" data-tag="api" style="">
+      <summary class="tag-summary">
+        <div class="tag-title-wrap">
+          <div class="tag-color-dot" style="background-color: #F08C00;"></div>
+          <span class="tag-name">#api</span>
+        </div>
+        <div class="tag-stats-pill">
+          <span>1 Total</span>
+          <span class="h">0 Hot</span>
+          <span class="w">1 Warm</span>
+          <span class="c">0 Cold</span>
+          <span class="visible-count" style="display:none; color:var(--slate); font-weight:bold; border-left: 1px solid var(--g300); padding-left: 12px;"></span>
+        </div>
+      </summary>
+      <div class="details-content">
+        <div class="empty-msg">No files match the current filters.</div>
+        <div class="scroll-list">
+
+          <div class="file-item inv-file" data-tier="warm" data-name="api_specs.md">
+            <div class="top">
+              <div><span class="tier-badge"></span><span class="path">api_specs.md</span></div>
+              <span class="date">2026-07-01</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+  </div>
+</div>
+
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const tagAccordions = document.querySelectorAll('.tag-accordion');
+  
+  let activeTiers = new Set(['hot', 'warm', 'cold']);
+  
+  function render() {
+    const query = searchInput.value.toLowerCase();
+    
+    tagAccordions.forEach(acc => {
+      const tag = acc.getAttribute('data-tag').toLowerCase();
+      const files = acc.querySelectorAll('.inv-file');
+      const emptyMsg = acc.querySelector('.empty-msg');
+      const visCount = acc.querySelector('.visible-count');
+      const pillSpans = acc.querySelectorAll('.tag-stats-pill span:not(.visible-count)');
+      
+      let visibleFiles = 0;
+      
+      files.forEach(file => {
+        const tier = file.getAttribute('data-tier');
+        const name = file.getAttribute('data-name').toLowerCase();
+        
+        const matchesTier = activeTiers.has(tier);
+        const matchesSearch = name.includes(query);
+        
+        if (matchesTier && matchesSearch) {
+          file.style.display = 'flex';
+          visibleFiles++;
+        } else {
+          file.style.display = 'none';
+        }
+      });
+      
+      // If tag matches search exactly, we might want to show it even if files don't match, 
+      // but usually users want to see files.
+      const tagMatches = tag.includes(query);
+      
+      if (visibleFiles > 0) {
+        emptyMsg.style.display = 'none';
+      } else {
+        emptyMsg.style.display = 'block';
+      }
+      
+      // If there's an active filter or search, show the visible count override
+      if (activeTiers.size < 3 || query.length > 0) {
+        pillSpans.forEach(s => s.style.display = 'none');
+        visCount.style.display = 'inline';
+        visCount.textContent = `${visibleFiles} Visible`;
+      } else {
+        pillSpans.forEach(s => s.style.display = 'inline');
+        visCount.style.display = 'none';
+      }
+      
+      // Only hide the accordion entirely if it doesn't match the search query AND has no visible files
+      if (visibleFiles === 0 && !tagMatches && query.length > 0) {
+        acc.style.display = 'none';
+      } else {
+        acc.style.display = 'block';
+      }
+    });
+  }
+  
+  searchInput.addEventListener('input', render);
+  
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tier = e.target.getAttribute('data-tier');
+      if (activeTiers.has(tier)) {
+        activeTiers.delete(tier);
+        e.target.classList.remove('active');
+      } else {
+        activeTiers.add(tier);
+        e.target.classList.add('active');
+      }
+      render();
+    });
+  });
+</script>
+
+</body>
+</html>

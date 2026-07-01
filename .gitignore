@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.chroma_db/
+.chroma_db.lock
+.last_sync_mtime
+.DS_Store
+Thumbs.db
+venv/
+.env/
