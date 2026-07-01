@@ -65,7 +65,7 @@ flowchart TD
 
     HOT ==search_wiki.py lấy dữ liệu==> DB
     WARM ==search_wiki.py lấy dữ liệu==> DB
-    COLD x-.-x|Bị loại bỏ để giảm nhiễu| DB
+    COLD -.->|Bị ẩn đi bởi bộ lọc Vector| DB
 ```
 
 Nhờ kiến trúc này, tool `search_wiki.py` hoạt động ở tốc độ **Zero-Latency**. Nó không phải quét toàn bộ ổ cứng (os.walk) mà chỉ nhìn vào các file đã index.
