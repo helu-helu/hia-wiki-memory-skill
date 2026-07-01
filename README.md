@@ -45,7 +45,7 @@ Hệ thống không nói lý thuyết suông. Mọi thứ được tự động 
 
 ```mermaid
 flowchart TD
-    subgraph Manifests [Quản lý vòng đời (Manifests)]
+    subgraph Manifests ["Quản lý vòng đời (Manifests)"]
         HOT(hot_index.md)
         WARM(warm_index.md)
         COLD(cold_index.md)
