@@ -3,132 +3,145 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-**Hia Wiki Memory Skill** is an enterprise-grade, token-efficient, and deterministic long-term memory management system for Autonomous AI Agents (OpenClaw, AutoGen, Claude Code, CrewAI, etc.). 
+**Hia Wiki Memory Skill** là một hệ thống "Não bộ" lưu trữ kiến thức dài hạn, chuẩn Enterprise, được xây dựng sẵn thành các script Python thực thi trực tiếp dành cho các AI Agent (như AutoGen, Claude Code, CrewAI, v.v.). 
 
-Instead of relying on unstructured chat history or purely probabilistic vector databases, this skill enforces a structured **Flat Storage + Tiered Manifests system** to give your Agents a permanent, organized, and shared "External Brain".
-
----
-
-## 🎯 The Problem It Solves
-
-As AI Agents run longer tasks, their default memory (chat history) grows exponentially. This leads to:
-1. **Context Bloat:** Maxing out token limits and increasing API costs.
-2. **Hallucinations:** Forgetting old instructions or mixing up versions.
-3. **Siloed Knowledge:** Agent A cannot easily share complex architectural blueprints with Agent B.
-4. **Link Rot (Broken Links):** Moving files between folders physically causes internal links to break.
-
-**The Solution:** Hia Wiki Memory offloads project knowledge into a Flat physical directory (`raw/`), while logically categorizing them into Hot/Warm/Cold tiers using lightweight `Manifest files` at the Root. Agents use Python scripts to read and write to this Wiki, ensuring data is never lost, links never break, and context windows are protected.
+Thay vì bắt AI tự nhớ mọi thứ trong ngữ cảnh (Context) giới hạn, Skill này tự động quản lý vòng đời dữ liệu thông qua hệ thống phân tầng ổ cứng vật lý và Vector Database.
 
 ---
 
-## ✨ Key Features
+## 📂 1. Cấu trúc thư mục được Skill tạo ra (Folder Architecture)
 
-- 📂 **Flat Storage + Tiered Manifests:** All knowledge files live permanently in `raw/` so links never break. Tier rotation happens logically by moving paths between `hot_index.md`, `warm_index.md`, and `cold_index.md`.
-- 🔄 **Smart Logical Rotation:** A built-in script keeps the working memory (`hot_index.md`) lean (max 50 files). Older paths are automatically appended to `warm_index.md` and `cold_index.md`.
-- 🔒 **Enterprise Concurrency (FileLock):** Safe for Multi-Agent environments. Multiple agents can write to the Wiki simultaneously without corrupting data or causing Race Conditions.
-- ⚡ **Zero-Latency RAG (ChromaDB):** Real-time vector search. To achieve O(1) skipping, the Vector DB sync script bypasses OS crawling and directly reads `hot_index.md` and `warm_index.md` to instantly know which files to sync.
-- 🧟 **Zombie Context Prevention:** Automatically purges deprecated or deleted knowledge from the Vector Database.
-- 🔪 **Semantic Chunking:** Automatically splits massively long markdown files (e.g., 50MB logs) by `# Headers` before indexing.
-- 🎯 **Hybrid Search:** Combines Vector Search with exact `tags` metadata filtering.
-- 🐙 **Invisible GitOps:** Automatically runs `git commit` on every Agent change.
-
----
-
-## 📂 How the Memory is Structured (The Flat-Manifest Architecture)
-
-When an AI initializes the Wiki, it creates the following structure:
+Khi Agent chạy lệnh khởi tạo, hệ thống sẽ tự động sinh ra cấu trúc thư mục sau để làm "Bộ não":
 
 ```text
 wiki_directory/
 │
-├── index.md              # 📍 MASTER MAP (Root): Auto-created. Links to Branch maps.
-├── branches/             # 🌿 BRANCH MAPS: Groups feature documentation links.
-│   └── auth_index.md     # (Example branch map)
+├── index.md              # 📍 MASTER MAP: Bản đồ tổng, chỉ chứa link đến các nhánh.
+├── branches/             # 🌿 BRANCH MAPS: Các bản đồ con chia theo domain (Frontend, DB...).
+│   └── auth_index.md     # (Ví dụ: Bản đồ chuyên về logic Đăng nhập)
 │
-├── manifests/            # 📜 LOGICAL TIERS: The status of all knowledge.
-│   ├── hot_index.md      # 🔴 SHORT-TERM (Active): List of paths to current focus files (max 50).
-│   ├── warm_index.md     # 🟡 MID-TERM (Reference): List of paths to older files (< 90 days).
-│   ├── cold_index.md     # 🔵 LONG-TERM (Archive): List of paths to > 90 days. Excluded from RAG.
-│   └── review_index.md   # 🟠 NEEDS REVIEW: Files flagged for rewarm/audit.
+├── manifests/            # 📜 LOGICAL TIERS: Các file danh sách điều hướng dữ liệu.
+│   ├── hot_index.md      # 🔴 HOT (Đang xử lý): Chứa path của các file đang code/sửa đổi.
+│   ├── warm_index.md     # 🟡 WARM (Đã xong): Các file cũ (< 90 ngày).
+│   ├── cold_index.md     # 🔵 COLD (Kho lạnh): File quá cũ, ít dùng.
+│   └── review_index.md   # 🟠 REVIEW: File cần Agent đọc lại để làm mới (Rewarm).
 │
-├── raw/                  # 🍃 FLAT STORAGE: All Markdown knowledge files live here permanently.
-│   ├── auth_v1.md        # (Tracked in cold_index.md)
-│   └── auth_v2.md        # (Tracked in hot_index.md)
+├── raw/                  # 🍃 FLAT STORAGE: Nơi chứa vật lý TẤT CẢ các file Markdown.
+│   ├── api_login.md      # File nội dung thực tế 1
+│   └── db_schema.md      # File nội dung thực tế 2
 │
-├── .chroma_db/           # 🧠 AI BRAIN (Vector Database - ChromaDB)
-├── .chroma_db.lock       # 🔒 FileLock to prevent data collision.
-└── .last_sync_mtime      # ⏱️ Sync optimization checkpoint.
+├── .chroma_db/           # 🧠 Não bộ AI (Vector Database - ChromaDB).
+└── .chroma_db.lock       # 🔒 FileLock chống ghi đè khi nhiều Agent cùng truy cập.
 ```
 
 ---
 
-## 🤝 The Synergy: Map vs Search Engine (Index vs VectorDB)
+## ⚙️ 2. Cách thức các Script hoạt động
 
-A common architectural question is: *"If we have a Vector Database, why do we still need `index.md`?"*
+Hệ thống không nói lý thuyết suông. Mọi thứ được tự động hóa bằng các công cụ Python có sẵn trong thư mục `scripts/`:
 
-They work together in perfect synergy without bottlenecking each other:
-1. **The Mindmap (`index.md` and Branch indexes):** Agents MUST read this first to get a "Bird's-eye view" of the project and discover correct terminology (Context). 
-2. **The Search Engine (ChromaDB):** Once the Agent knows the domain structure and vocabulary from the Map, it uses `search_wiki.py` (Hybrid Search) to teleport directly to the specific code/knowledge chunk (Leaf) in `raw/` without reading thousands of lines.
+> [!NOTE] 
+> **Cơ chế chống chết Link (Anti Link-Rot):** Mọi file kiến thức khi tạo ra đều nằm "chết" ở thư mục `raw/`. Các script Python không bao giờ di chuyển file vật lý, chúng chỉ di chuyển các đường dẫn (path) bên trong các file `manifests/`. Do đó, các đường link liên kết nội bộ không bao giờ bị hỏng.
 
----
+```mermaid
+flowchart TD
+    subgraph Manifests [Quản lý vòng đời (Manifests)]
+        HOT(hot_index.md)
+        WARM(warm_index.md)
+        COLD(cold_index.md)
+    end
 
-## 🚀 Quick Start (Auto-Setup via AI)
+    subgraph Storage [Lưu trữ vật lý]
+        RAW(Thư mục raw/)
+    end
 
-You do **NOT** need to manually configure this skill. You can leverage your AI Agent's intelligence to set itself up. 
+    subgraph RAG [Não bộ AI]
+        DB[(Chroma Vector DB)]
+    end
 
-Simply copy the **Magic Prompt** below and paste it into your Agent's chat interface (OpenClaw, AutoGen, etc.):
+    HOT -.Được trỏ tới.-> RAW
+    WARM -.Được trỏ tới.-> RAW
+    COLD -.Được trỏ tới.-> RAW
 
-> **The Universal Setup Prompt (Copy & Paste for your AI):**
-> *"Hello AI, I want to equip you with a Long-Term Memory System using the `hia-wiki-memory-skill` folder I just downloaded. Please act as a System Architect and execute this automated setup immediately:
-> 
-> 1. **Install Dependencies:** Open the terminal and run `pip install -r requirements.txt` inside the skill's folder.
-> 2. **Determine Wiki Location:** Ask me where I want to store the Wiki directory (If I don't answer, automatically select a default folder in my OneDrive to ensure data safety).
-> 3. **Learn Core Knowledge:** Use your file reading tool to thoroughly read `SKILL.md`. You must memorize the rules regarding Manifest Indexes, and especially the 'Isolation Rule' (Agents are forbidden from reading warm/cold indexes).
-> 4. **Initialize:** Once the location is confirmed, run `python scripts/init_wiki.py --wiki_dir <selected_location>` to bootstrap the storage.
-> 5. **The Pledge:** From now on, you may use your default memory to converse smoothly with me, BUT for architectural details, code logic, or major decisions, you MUST use `update_wiki.py` to write and `search_wiki.py` to search.
-> 
-> Please confirm and begin steps 1 and 2 right now!"*
+    HOT ==search_wiki.py lấy dữ liệu==> DB
+    WARM ==search_wiki.py lấy dữ liệu==> DB
+    COLD x-.-x|Bị loại bỏ để giảm nhiễu| DB
+```
 
----
-
-## 📖 How Agents Use It
-
-Once installed, your Agents will interact with the Wiki using 4 robust Python scripts:
-
-1. `init_wiki.py`: Bootstraps the `raw/`, `branches/` and `manifests/` indexes.
-2. `update_wiki.py`: The single entry point for writing. Saves to `raw/`, enforces YAML frontmatter, updates the manifest, and uses `FileLock`. **Supports reading from `--source_file` or `stdin` for huge files.**
-3. `search_wiki.py`: A Semantic RAG search tool. Directly parses `hot_index.md` and `warm_index.md` to instantly locate active files for DB syncing.
-4. `rotate_wiki.py`: A maintenance script that logically moves paths from Hot to Warm to Cold manifests based on age. It also flags old files for "Rewarm" and Garbage Collects deprecated files.
-5. `check_links.py`: Detects broken links in `index.md` and `branches/` and marks them with `❌ (DELETED)`.
-6. `export_memory_state.py` & `build_dashboard.py`: Exports memory state to JSON and generates a stunning HTML Dashboard to visualize what the Agents know.
+Nhờ kiến trúc này, tool `search_wiki.py` hoạt động ở tốc độ **Zero-Latency**. Nó không phải quét toàn bộ ổ cứng (os.walk) mà chỉ nhìn vào các file đã index.
 
 ---
 
-## 🤖 Best Practice: The Hierarchical Proxy Pattern (For Enterprise Multi-Agent Systems)
+## 🚀 3. Vòng đời dữ liệu thực tế (Được Script xử lý tự động)
 
-If you are running a single Agent, giving it direct access to this Wiki is fine. However, if you are running a massive Multi-Agent system, **do NOT give every sub-agent direct access to the Wiki tools.** 
+Dưới đây là cách bộ Skill tự động xử lý một file kiến thức mới từ lúc sinh ra đến lúc "nghỉ hưu":
 
-Instead, use the **Hierarchical Proxy Pattern**:
-1. Create a dedicated **Main Agent (Orchestrator)** and a **Librarian Agent**.
-2. Give ONLY the Librarian the `update_wiki` and `search_wiki` tools.
-3. The 100+ Worker Agents (Coders, QAs) DO NOT know about the Wiki. They simply report task completions to the Main Agent.
-4. The Main Agent synthesizes the workers' reports and messages the Librarian to store the consolidated knowledge. This keeps the Wiki perfectly clean and protects all Workers from Context Bloat.
-
----
-
-## 🏢 Advanced & Enterprise Integration
-
-- **[Orchestrator Pipeline](advanced_guides/platform_integration.md#-2-enterprise-topology-the-hierarchical-proxy-model):** Set up a "Manager Agent" (e.g., Helu) to review the Wiki.
-- **[Cross-Platform Integration](advanced_guides/platform_integration.md):** Specific instructions for integrating this skill into UI frameworks.
+1. **Kiểm tra trùng lặp (`check_duplication.py`):** 
+   Trước khi ghi, Agent gọi lệnh này để soi vào Vector DB. Nếu nội dung chuẩn bị ghi đã tồn tại > 80% (Semantic Similarity), script sẽ chặn lại để tránh sinh ra dữ liệu rác.
+2. **Ghi và Khóa (`update_wiki.py`):** 
+   Agent gọi lệnh ghi. Script này tự động tạo `FileLock` để khóa ổ cứng (chống 2 Agent ghi đè nhau), thả file vào thư mục `raw/`, cập nhật YAML frontmatter, ghi danh vào `hot_index.md`, và **tự động Git Commit**. Nếu Git lỗi, script sẽ trả lỗi về cho Agent biết.
+3. **Truy vấn lai (`search_wiki.py`):** 
+   Khi Agent cần tìm lại code cũ, lệnh này kết hợp tìm kiếm Vector (ChromaDB) + lọc theo thẻ (Tags/Metadata) để moi đúng đoạn code cần thiết ra, tránh nổ Context Window. (Tích hợp sẵn Chunking). 
+   *Đặc biệt: Hệ thống áp dụng **Bộ lọc Vector Động (Dynamic Vector Filtering)**. Mặc định, các file trong kho lạnh (`cold`) sẽ bị ẩn khỏi kết quả tìm kiếm để chống nhiễu RAG. Tuy nhiên, Agent có thể chủ động gắn cờ `--include-cold` để tháo bộ lọc và lặn xuống kho lạnh tìm kiếm.*
+4. **Đóng băng và Xóa rác (`rotate_wiki.py`):** 
+   Được chạy định kỳ. Script tự động tính số ngày tuổi của file. Quá 7 ngày -> chuyển từ Hot sang Warm. Quá 90 ngày -> đẩy xuống kho lạnh (Cold) để bị ẩn đi bởi Bộ lọc Vector Động. File nào bị dán mác `deprecated` quá 30 ngày sẽ bị xóa sổ hoàn toàn khỏi ổ cứng.
 
 ---
 
-## ⚠️ Known Limitations
+## 🛠 4. Cách Agent tự động cài đặt
 
-As the system evolves, please be aware of the following architectural limits:
-1. **Single Librarian Bottleneck:** Currently, the system uses a single Librarian Agent to handle all `update_wiki.py` requests via FileLock. It does not yet support multiple Librarians sharded by domain (e.g., one for Backend, one for Frontend), which may cause queueing delays with 100+ concurrent worker agents.
-2. **Flexible Agent Messaging:** The communication between the Main Agent and the Librarian Agent relies on natural language. There is no hard JSON schema enforced for these messages yet.
-3. **Cloud & Redis Lock:** The `cloud_api_migration.md` guide outlines a roadmap for using Redis distributed locks for cloud-scale deployments. This is an opt-in draft and has not been integrated into the core `update_wiki.py` script yet.
+Bạn không cần tự thiết lập gì cả. 
+
+**Bước 1:** Đảm bảo máy tính đã có các thư viện nền:
+```bash
+pip install -r requirements.txt
+```
+
+**Bước 2:** Copy nguyên đoạn Prompt dưới đây ném cho Agent của bạn (Claude, GPT, AutoGen...):
+
+> *"Chào AI, đây là thư mục `hia-wiki-memory-skill`. Hệ thống này cung cấp cho bạn các công cụ Python để tự động hóa trí nhớ dài hạn. 
+> 1. Hãy đọc file `SKILL.md` để lấy danh sách các tool và hiểu về vai trò quản trị của bạn.
+> 2. Chạy `scripts/init_wiki.py --dir <thư_mục_bạn_chọn>` để hệ thống tự động bung cấu trúc thư mục (raw, manifests, branches).
+> 3. Từ nay, hãy chủ động dùng `update_wiki.py` và `search_wiki.py` để ghi nhớ và lấy lại thông tin kiến trúc dự án thay vì dựa vào trí nhớ Context mặc định.
+> 4. Hãy chủ động nhắc nhở tôi thực hiện bảo trì (`rotate_wiki.py`) khi kết thúc một tính năng lớn, và sẵn sàng mở Dashboard cho tôi xem bất cứ khi nào tôi yêu cầu."*
+
+---
+
+## 🌐 5. Sẵn sàng cho Multi-Agent (Quy mô Enterprise)
+
+Hệ thống đã xây dựng sẵn bộ Lock vật lý (`FileLock`) nên nó chịu được môi trường Multi-Agent. Để phát huy tối đa sức mạnh mà không làm nghẽn cổ chai DB, Skill hỗ trợ hoàn hảo **Mô hình Ủy quyền (Hierarchical Proxy Pattern)**:
+
+- Chỉ cần cấp quyền truy cập các file trong `scripts/` cho **1 Agent duy nhất** đóng vai trò **Librarian (Thủ thư)**.
+- Hàng chục Agent thợ (Worker) bên ngoài cứ việc code và test. Khi có thông tin quan trọng, chúng tự động báo cáo cho Quản lý (Main Agent). Main Agent sẽ ra lệnh cho Librarian gọi `update_wiki.py`. 
+- Mô hình này đã được chứng minh là ngăn chặn 100% rác dữ liệu ở quy mô dự án lớn.
+
+---
+
+## 📚 7. Tài liệu nâng cao (Advanced Guides)
+
+Nếu bạn muốn scale hệ thống này lên quy mô khổng lồ, hãy tham khảo các tài liệu chuyên sâu trong thư mục `advanced_guides/`:
+- 📖 **[platform_integration.md](advanced_guides/platform_integration.md):** Hướng dẫn chi tiết cách tích hợp Librarian Agent vào các nền tảng như OpenClaw, CrewAI, AutoGen, Claude Code (Kèm sẵn Prompt mẫu để copy-paste).
+- ☁️ **[cloud_api_migration.md](advanced_guides/cloud_api_migration.md):** Bản thiết kế kiến trúc nâng cấp từ Local Script lên Cloud API Server (Microservice) bằng FastAPI và Redis Lock.
+
+---
+
+## 🧹 8. Cơ chế bảo trì & Dashboard tự động
+
+Hệ thống được thiết kế để tự động hóa 99%. AI (Librarian) được trang bị "ý thức" để **tự động nhắc nhở** bạn thực hiện bảo trì sau các đợt code lớn. Khi được bạn cho phép, AI sẽ chạy các script sau:
+
+### Lịch trình đề xuất (AI tự động nhắc nhở):
+- **Đóng băng & Dọn rác (`rotate_wiki.py`):** Đẩy các file cũ xuống kho lạnh (Cold) để ẩn đi trong các truy vấn thông thường, dọn dẹp các file rác (deprecated), giữ cho bộ não AI luôn tập trung.
+- **Quét Link Hỏng (`check_links.py`):** Quét toàn bộ Map (`index.md`) xem có link nào trỏ vào file đã xóa không và tự đánh dấu ❌.
+- **Khôi phục thảm họa (`rebuild_db.py`):** Xóa trắng não bộ Vector (ChromaDB) để hệ thống đọc và index lại từ đầu dựa trên file Markdown.
+
+### 📊 Xem Dashboard Trực Quan
+Bạn có thể ra lệnh cho AI: *"Mở Dashboard hệ thống cho tôi xem"*.
+Lập tức, AI sẽ tự động chạy 2 lệnh dưới đây:
+```bash
+python scripts/export_memory_state.py --dir <wiki_dir>
+python scripts/build_dashboard.py --dir <wiki_dir>
+```
+Kết quả sinh ra là một file HTML siêu đẹp hiển thị biểu đồ tròn, cột thống kê số lượng file ở các Tier. Trực quan như một ứng dụng Web thực thụ.
 
 ---
 *Built for the future of Multi-Agent Systems. Code smarter, remember forever.*

@@ -284,7 +284,7 @@
     <div class="eyebrow">Hia System</div>
     <h1>Agent Memory <em>Dashboard</em></h1>
     <div style="margin-top: 10px; color: var(--g500); font-family: var(--mono); font-size: 13px;">
-      Last Sync: 2026-07-01 17:22 | Total Size: 0.37 KB
+      Last Sync: 2026-07-01 22:37 | Total Size: 0.68 KB
     </div>
   </header>
 
@@ -299,11 +299,11 @@
     </div>
     <div class="stat-card warm">
       <div class="label">Warm Tier</div>
-      <div class="val">1</div>
+      <div class="val">0</div>
     </div>
     <div class="stat-card cold">
       <div class="label">Cold Tier</div>
-      <div class="val">0</div>
+      <div class="val">1</div>
     </div>
     <div class="stat-card review" style="border-color: var(--clay); background: #FFF5F0;">
       <div class="label" style="color: var(--clay-d);">Needs Rewarm</div>
@@ -324,9 +324,11 @@
   
   <div class="chart-container">
     <div class="chart-bar">
-      <div class="chart-segment" style="width: 33.33333333333333%; background-color: #D97757;" title="#architecture: 1 files (33.3%)"></div>
-<div class="chart-segment" style="width: 33.33333333333333%; background-color: #1864AB;" title="#core: 1 files (33.3%)"></div>
-<div class="chart-segment" style="width: 33.33333333333333%; background-color: #F08C00;" title="#api: 1 files (33.3%)"></div>
+      <div class="chart-segment" style="width: 33.33333333333333%; background-color: #D97757;" title="#example: 2 files (33.3%)"></div>
+<div class="chart-segment" style="width: 16.666666666666664%; background-color: #1864AB;" title="#hot: 1 files (16.7%)"></div>
+<div class="chart-segment" style="width: 16.666666666666664%; background-color: #F08C00;" title="#agent: 1 files (16.7%)"></div>
+<div class="chart-segment" style="width: 16.666666666666664%; background-color: #788C5D;" title="#cold: 1 files (16.7%)"></div>
+<div class="chart-segment" style="width: 16.666666666666664%; background-color: #845EF7;" title="#deprecated: 1 files (16.7%)"></div>
 
     </div>
   </div>
@@ -342,17 +344,17 @@
   
   <div class="accordion-group" id="inventoryGroup">
 
-    <details class="tag-accordion" data-tag="architecture" style="">
+    <details class="tag-accordion" data-tag="example" style="">
       <summary class="tag-summary">
         <div class="tag-title-wrap">
           <div class="tag-color-dot" style="background-color: #D97757;"></div>
-          <span class="tag-name">#architecture</span>
+          <span class="tag-name">#example</span>
         </div>
         <div class="tag-stats-pill">
-          <span>1 Total</span>
+          <span>2 Total</span>
           <span class="h">1 Hot</span>
           <span class="w">0 Warm</span>
-          <span class="c">0 Cold</span>
+          <span class="c">1 Cold</span>
           <span class="visible-count" style="display:none; color:var(--slate); font-weight:bold; border-left: 1px solid var(--g300); padding-left: 12px;"></span>
         </div>
       </summary>
@@ -360,9 +362,16 @@
         <div class="empty-msg">No files match the current filters.</div>
         <div class="scroll-list">
 
-          <div class="file-item inv-file" data-tier="hot" data-name="arch_design.md">
+          <div class="file-item inv-file" data-tier="hot" data-name="example_hot.md">
             <div class="top">
-              <div><span class="tier-badge"></span><span class="path">arch_design.md</span></div>
+              <div><span class="tier-badge"></span><span class="path">example_hot.md</span></div>
+              <span class="date">2026-07-01</span>
+            </div>
+          </div>
+
+          <div class="file-item inv-file" data-tier="cold" data-name="example_cold.md">
+            <div class="top">
+              <div><span class="tier-badge"></span><span class="path">example_cold.md</span></div>
               <span class="date">2026-07-01</span>
             </div>
           </div>
@@ -371,11 +380,11 @@
       </div>
     </details>
 
-    <details class="tag-accordion" data-tag="core" style="">
+    <details class="tag-accordion" data-tag="hot" style="">
       <summary class="tag-summary">
         <div class="tag-title-wrap">
           <div class="tag-color-dot" style="background-color: #1864AB;"></div>
-          <span class="tag-name">#core</span>
+          <span class="tag-name">#hot</span>
         </div>
         <div class="tag-stats-pill">
           <span>1 Total</span>
@@ -389,9 +398,9 @@
         <div class="empty-msg">No files match the current filters.</div>
         <div class="scroll-list">
 
-          <div class="file-item inv-file" data-tier="hot" data-name="arch_design.md">
+          <div class="file-item inv-file" data-tier="hot" data-name="example_hot.md">
             <div class="top">
-              <div><span class="tier-badge"></span><span class="path">arch_design.md</span></div>
+              <div><span class="tier-badge"></span><span class="path">example_hot.md</span></div>
               <span class="date">2026-07-01</span>
             </div>
           </div>
@@ -400,17 +409,46 @@
       </div>
     </details>
 
-    <details class="tag-accordion" data-tag="api" style="">
+    <details class="tag-accordion" data-tag="agent" style="">
       <summary class="tag-summary">
         <div class="tag-title-wrap">
           <div class="tag-color-dot" style="background-color: #F08C00;"></div>
-          <span class="tag-name">#api</span>
+          <span class="tag-name">#agent</span>
+        </div>
+        <div class="tag-stats-pill">
+          <span>1 Total</span>
+          <span class="h">1 Hot</span>
+          <span class="w">0 Warm</span>
+          <span class="c">0 Cold</span>
+          <span class="visible-count" style="display:none; color:var(--slate); font-weight:bold; border-left: 1px solid var(--g300); padding-left: 12px;"></span>
+        </div>
+      </summary>
+      <div class="details-content">
+        <div class="empty-msg">No files match the current filters.</div>
+        <div class="scroll-list">
+
+          <div class="file-item inv-file" data-tier="hot" data-name="example_hot.md">
+            <div class="top">
+              <div><span class="tier-badge"></span><span class="path">example_hot.md</span></div>
+              <span class="date">2026-07-01</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+    <details class="tag-accordion" data-tag="cold" style="">
+      <summary class="tag-summary">
+        <div class="tag-title-wrap">
+          <div class="tag-color-dot" style="background-color: #788C5D;"></div>
+          <span class="tag-name">#cold</span>
         </div>
         <div class="tag-stats-pill">
           <span>1 Total</span>
           <span class="h">0 Hot</span>
-          <span class="w">1 Warm</span>
-          <span class="c">0 Cold</span>
+          <span class="w">0 Warm</span>
+          <span class="c">1 Cold</span>
           <span class="visible-count" style="display:none; color:var(--slate); font-weight:bold; border-left: 1px solid var(--g300); padding-left: 12px;"></span>
         </div>
       </summary>
@@ -418,9 +456,38 @@
         <div class="empty-msg">No files match the current filters.</div>
         <div class="scroll-list">
 
-          <div class="file-item inv-file" data-tier="warm" data-name="api_specs.md">
+          <div class="file-item inv-file" data-tier="cold" data-name="example_cold.md">
             <div class="top">
-              <div><span class="tier-badge"></span><span class="path">api_specs.md</span></div>
+              <div><span class="tier-badge"></span><span class="path">example_cold.md</span></div>
+              <span class="date">2026-07-01</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </details>
+
+    <details class="tag-accordion" data-tag="deprecated" style="">
+      <summary class="tag-summary">
+        <div class="tag-title-wrap">
+          <div class="tag-color-dot" style="background-color: #845EF7;"></div>
+          <span class="tag-name">#deprecated</span>
+        </div>
+        <div class="tag-stats-pill">
+          <span>1 Total</span>
+          <span class="h">0 Hot</span>
+          <span class="w">0 Warm</span>
+          <span class="c">1 Cold</span>
+          <span class="visible-count" style="display:none; color:var(--slate); font-weight:bold; border-left: 1px solid var(--g300); padding-left: 12px;"></span>
+        </div>
+      </summary>
+      <div class="details-content">
+        <div class="empty-msg">No files match the current filters.</div>
+        <div class="scroll-list">
+
+          <div class="file-item inv-file" data-tier="cold" data-name="example_cold.md">
+            <div class="top">
+              <div><span class="tier-badge"></span><span class="path">example_cold.md</span></div>
               <span class="date">2026-07-01</span>
             </div>
           </div>

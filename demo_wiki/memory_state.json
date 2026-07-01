@@ -1,101 +1,163 @@
 {
-  "generated_at": "2026-07-01T17:22:48.015628",
+  "generated_at": "2026-07-01T22:37:55.712607",
   "stats": {
     "total_files": 2,
     "hot": 1,
-    "warm": 1,
-    "cold": 0,
+    "warm": 0,
+    "cold": 1,
     "review": 0,
-    "total_size_kb": 0.37
+    "total_size_kb": 0.68
   },
   "tiers": {
     "hot": [
       {
-        "path": "raw/arch_design.md",
-        "title": "arch_design",
-        "author": "System",
+        "path": "raw/example_hot.md",
+        "title": "example_hot",
+        "author": "agent",
         "status": "active",
         "tags": [
-          "architecture",
-          "core"
+          "example",
+          "hot",
+          "agent"
         ],
         "last_updated": "2026-07-01",
-        "size_kb": 0.24
+        "size_kb": 0.32
       }
     ],
-    "warm": [
+    "warm": [],
+    "cold": [
       {
-        "path": "raw/api_specs.md",
-        "title": "api_specs",
-        "author": "QA",
-        "status": "active",
+        "path": "raw/example_cold.md",
+        "title": "example_cold",
+        "author": "agent",
+        "status": "deprecated",
         "tags": [
-          "api"
+          "example",
+          "cold",
+          "deprecated"
         ],
         "last_updated": "2026-07-01",
-        "size_kb": 0.13
+        "size_kb": 0.36
       }
-    ],
-    "cold": []
+    ]
   },
   "needs_review": {},
   "context_inventory": {
-    "architecture": {
+    "example": {
+      "total": 2,
+      "hot": 1,
+      "warm": 0,
+      "cold": 1,
+      "files": [
+        {
+          "path": "raw/example_hot.md",
+          "title": "example_hot",
+          "author": "agent",
+          "status": "active",
+          "tags": [
+            "example",
+            "hot",
+            "agent"
+          ],
+          "last_updated": "2026-07-01",
+          "size_kb": 0.32
+        },
+        {
+          "path": "raw/example_cold.md",
+          "title": "example_cold",
+          "author": "agent",
+          "status": "deprecated",
+          "tags": [
+            "example",
+            "cold",
+            "deprecated"
+          ],
+          "last_updated": "2026-07-01",
+          "size_kb": 0.36
+        }
+      ]
+    },
+    "hot": {
       "total": 1,
       "hot": 1,
       "warm": 0,
       "cold": 0,
       "files": [
         {
-          "path": "raw/arch_design.md",
-          "title": "arch_design",
-          "author": "System",
+          "path": "raw/example_hot.md",
+          "title": "example_hot",
+          "author": "agent",
           "status": "active",
           "tags": [
-            "architecture",
-            "core"
+            "example",
+            "hot",
+            "agent"
           ],
           "last_updated": "2026-07-01",
-          "size_kb": 0.24
+          "size_kb": 0.32
         }
       ]
     },
-    "core": {
+    "agent": {
       "total": 1,
       "hot": 1,
       "warm": 0,
       "cold": 0,
       "files": [
         {
-          "path": "raw/arch_design.md",
-          "title": "arch_design",
-          "author": "System",
+          "path": "raw/example_hot.md",
+          "title": "example_hot",
+          "author": "agent",
           "status": "active",
           "tags": [
-            "architecture",
-            "core"
+            "example",
+            "hot",
+            "agent"
           ],
           "last_updated": "2026-07-01",
-          "size_kb": 0.24
+          "size_kb": 0.32
         }
       ]
     },
-    "api": {
+    "cold": {
       "total": 1,
       "hot": 0,
-      "warm": 1,
-      "cold": 0,
+      "warm": 0,
+      "cold": 1,
       "files": [
         {
-          "path": "raw/api_specs.md",
-          "title": "api_specs",
-          "author": "QA",
-          "status": "active",
+          "path": "raw/example_cold.md",
+          "title": "example_cold",
+          "author": "agent",
+          "status": "deprecated",
           "tags": [
-            "api"
+            "example",
+            "cold",
+            "deprecated"
           ],
           "last_updated": "2026-07-01",
-          "size_kb": 0.13
+          "size_kb": 0.36
+        }
+      ]
+    },
+    "deprecated": {
+      "total": 1,
+      "hot": 0,
+      "warm": 0,
+      "cold": 1,
+      "files": [
+        {
+          "path": "raw/example_cold.md",
+          "title": "example_cold",
+          "author": "agent",
+          "status": "deprecated",
+          "tags": [
+            "example",
+            "cold",
+            "deprecated"
+          ],
+          "last_updated": "2026-07-01",
+          "size_kb": 0.36
         }
       ]
     }

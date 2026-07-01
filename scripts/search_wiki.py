@@ -72,10 +72,10 @@ except ImportError:
         def __exit__(self, exc_type, exc_val, exc_tb): pass
     class Timeout(Exception): pass
 
-def get_active_paths(wiki_dir: Path):
+def get_all_indexed_paths(wiki_dir: Path):
     active_paths = set()
     manifests_dir = wiki_dir / "manifests"
-    for manifest_name in ["hot_index.md", "warm_index.md"]:
+    for manifest_name in ["hot_index.md", "warm_index.md", "cold_index.md"]:
         manifest_path = manifests_dir / manifest_name
         if manifest_path.exists():
             with open(manifest_path, 'r', encoding='utf-8') as f:
@@ -104,7 +104,7 @@ def sync_db(wiki_dir: Path, collection):
     
     try:
         with FileLock(str(sync_lock_path), timeout=30):
-            active_paths = get_active_paths(wiki_dir)
+            active_paths = get_all_indexed_paths(wiki_dir)
             current_max_mtime, current_file_count = get_wiki_state(wiki_dir, active_paths)
             
             last_sync_mtime = 0
@@ -198,7 +198,7 @@ def sync_db(wiki_dir: Path, collection):
     except Timeout:
         print("Warning: Another Agent is currently syncing the DB. Proceeding to search with current DB state...")
 
-def search_wiki(wiki_dir: str, query: str, top_k: int = 3, tag_filter: str = None):
+def search_wiki(wiki_dir: str, query: str, top_k: int = 3, tag_filter: str = None, include_cold: bool = False):
     wiki_path = Path(wiki_dir).resolve()
     
     sync_lock_path = wiki_path / ".chroma_db.lock"
@@ -233,8 +233,18 @@ def search_wiki(wiki_dir: str, query: str, top_k: int = 3, tag_filter: str = Non
     print(f"\n--- Searching for: '{query}' ---")
     
     where_clause = None
-    if tag_filter:
-        where_clause = {"tags": {"$contains": tag_filter}}
+    if not include_cold:
+        where_clause = {"tier": {"$ne": "cold"}}
+        if tag_filter:
+            where_clause = {
+                "$and": [
+                    {"tier": {"$ne": "cold"}},
+                    {"tags": {"$contains": tag_filter}}
+                ]
+            }
+    else:
+        if tag_filter:
+            where_clause = {"tags": {"$contains": tag_filter}}
         
     try:
         results = collection.query(
@@ -265,6 +275,7 @@ if __name__ == "__main__":
     parser.add_argument("--query", required=True, help="Search query")
     parser.add_argument("--top", type=int, default=3, help="Number of results to return")
     parser.add_argument("--tags", type=str, help="Filter by specific tag")
+    parser.add_argument("--include-cold", action="store_true", help="Include cold tier files in search")
     
     args = parser.parse_args()
-    search_wiki(args.dir, args.query, args.top, args.tags)
+    search_wiki(args.dir, args.query, args.top, args.tags, args.include_cold)

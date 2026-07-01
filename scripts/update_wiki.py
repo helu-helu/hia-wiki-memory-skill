@@ -8,14 +8,18 @@ import subprocess
 import sys
 import json
 
-def try_git_commit(wiki_dir: str, message: str):
+def try_git_commit(wiki_dir: str, message: str) -> str:
     wiki_path = Path(wiki_dir).resolve()
     if (wiki_path / ".git").exists():
         try:
             subprocess.run(["git", "add", "."], cwd=wiki_path, check=True, capture_output=True)
             subprocess.run(["git", "commit", "-m", message], cwd=wiki_path, check=True, capture_output=True)
-        except Exception:
-            pass
+            return ""
+        except subprocess.CalledProcessError as e:
+            return f"Git commit failed: {e.stderr.decode('utf-8', errors='ignore').strip()}"
+        except Exception as e:
+            return f"Git commit failed: {str(e)}"
+    return ""
 
 try:
     from filelock import FileLock, Timeout
@@ -142,7 +146,9 @@ def update_or_create_file(wiki_dir: str, tier: str, filename: str, title: str, s
             # Update manifest files safely under the same lock
             update_manifest(wiki_path, tier, relative_path)
                 
-            try_git_commit(wiki_dir, f"[Agent] Update {filename}")
+            git_err = try_git_commit(wiki_dir, f"[Agent] Update {filename}")
+            if git_err:
+                return {"status": "success", "message": f"Successfully wrote to {file_path} and registered in {tier}_index.md, BUT Git commit failed: {git_err}", "file": str(file_path), "tier": tier, "warning": git_err}
             return {"status": "success", "message": f"Successfully wrote to {file_path} and registered in {tier}_index.md", "file": str(file_path), "tier": tier}
             
     except Timeout:
