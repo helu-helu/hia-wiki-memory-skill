@@ -1,5 +1,7 @@
 # Upgrade Guide: Cloud Server Migration (API-First Microservice)
 
+> 🚧 Draft — tài liệu định hướng cho tương lai, chưa được tích hợp vào core scripts. Dùng khi bạn thực sự cần scale lên Cloud.
+
 *This document is specifically for Enterprises or Users who want to move the Wiki system from a personal computer (Local) to a shared Cloud Server.*
 
 You **DO NOT NEED** to do this immediately. Simply provide this document to your AI Agent when needed, and the Agent will read it and set everything up automatically.

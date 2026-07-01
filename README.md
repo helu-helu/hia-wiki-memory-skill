@@ -118,8 +118,17 @@ Instead, use the **Hierarchical Proxy Pattern**:
 
 ## 🏢 Advanced & Enterprise Integration
 
-- **[Orchestrator Pipeline](advanced_guides/orchestrator_pipeline.md):** Set up a "Manager Agent" (e.g., Helu) to review the Wiki.
+- **[Orchestrator Pipeline](advanced_guides/platform_integration.md#-2-enterprise-topology-the-hierarchical-proxy-model):** Set up a "Manager Agent" (e.g., Helu) to review the Wiki.
 - **[Cross-Platform Integration](advanced_guides/platform_integration.md):** Specific instructions for integrating this skill into UI frameworks.
+
+---
+
+## ⚠️ Known Limitations
+
+As the system evolves, please be aware of the following architectural limits:
+1. **Single Librarian Bottleneck:** Currently, the system uses a single Librarian Agent to handle all `update_wiki.py` requests via FileLock. It does not yet support multiple Librarians sharded by domain (e.g., one for Backend, one for Frontend), which may cause queueing delays with 100+ concurrent worker agents.
+2. **Flexible Agent Messaging:** The communication between the Main Agent and the Librarian Agent relies on natural language. There is no hard JSON schema enforced for these messages yet.
+3. **Cloud & Redis Lock:** The `cloud_api_migration.md` guide outlines a roadmap for using Redis distributed locks for cloud-scale deployments. This is an opt-in draft and has not been integrated into the core `update_wiki.py` script yet.
 
 ---
 *Built for the future of Multi-Agent Systems. Code smarter, remember forever.*

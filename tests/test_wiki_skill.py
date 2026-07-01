@@ -16,6 +16,7 @@ from update_wiki import update_or_create_file, update_manifest
 from init_wiki import init_wiki
 from check_links import check_and_update_links
 from export_memory_state import export_state
+from check_duplication import check_duplication
 import json
 
 class TestWikiSkill(unittest.TestCase):
@@ -61,6 +62,48 @@ class TestWikiSkill(unittest.TestCase):
         with open(self.manifests_dir / "hot_index.md", 'r') as f:
             hot_content = f.read()
             self.assertIn("- raw/new_doc.md", hot_content)
+
+    def test_update_wiki_json_returns(self):
+        """Test update_wiki returns correct dict on error and success."""
+        # Test error: invalid filename
+        result = update_or_create_file(
+            wiki_dir=str(self.wiki_path),
+            tier="hot",
+            filename="invalid..name.md",
+            title="Test",
+            status="active",
+            content="test",
+            author="test",
+            tags="test",
+            superseded_by=""
+        )
+        self.assertEqual(result["status"], "error")
+        self.assertIn("Invalid filename", result["message"])
+
+        # Test success
+        result = update_or_create_file(
+            wiki_dir=str(self.wiki_path),
+            tier="hot",
+            filename="valid_name.md",
+            title="Test",
+            status="active",
+            content="test",
+            author="test",
+            tags="test",
+            superseded_by=""
+        )
+        self.assertEqual(result["status"], "success")
+        self.assertIn("Successfully wrote", result["message"])
+        self.assertIn("valid_name.md", result["file"])
+
+    def test_check_duplication_missing_chromadb(self):
+        """Test check_duplication behavior when chromadb is missing or handling errors gracefully."""
+        result = check_duplication(str(self.wiki_path), "Some content to test similarity.")
+        # If chromadb is missing in the environment, it returns an error about it.
+        # If it's present but DB is missing, it returns another error.
+        self.assertEqual(result["status"], "error")
+        self.assertTrue("chromadb is not installed" in result["message"] or "Vector DB does not exist" in result["message"])
+
 
     def test_rotate_wiki_capacity_and_age(self):
         """Test tính năng Rotate logic: Di chuyển từ hot_index -> warm_index và sửa YAML tag."""

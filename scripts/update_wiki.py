@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 import subprocess
 import sys
+import json
 
 def try_git_commit(wiki_dir: str, message: str):
     wiki_path = Path(wiki_dir).resolve()
@@ -13,7 +14,6 @@ def try_git_commit(wiki_dir: str, message: str):
         try:
             subprocess.run(["git", "add", "."], cwd=wiki_path, check=True, capture_output=True)
             subprocess.run(["git", "commit", "-m", message], cwd=wiki_path, check=True, capture_output=True)
-            print(f"Git auto-commit: {message}")
         except Exception:
             pass
 
@@ -67,24 +67,20 @@ def update_or_create_file(wiki_dir: str, tier: str, filename: str, title: str, s
     raw_dir = wiki_path / "raw"
     
     if not raw_dir.exists():
-        print(f"Error: {raw_dir} does not exist. Please run init_wiki.py first.")
-        return
+        return {"status": "error", "message": f"{raw_dir} does not exist. Please run init_wiki.py first."}
         
     # SECURITY PATCH: Prevent Path Traversal and Injection
     if not re.match(r'^[a-zA-Z0-9_\-\.]+$', filename):
-        print(f"Error: Invalid filename '{filename}'. Only alphanumeric characters, hyphens, underscores, and dots are allowed.")
-        return
+        return {"status": "error", "message": f"Invalid filename '{filename}'. Only alphanumeric characters, hyphens, underscores, and dots are allowed."}
     if '..' in filename:
-        print("Error: Invalid filename. Path traversal detected.")
-        return
+        return {"status": "error", "message": "Invalid filename. Path traversal detected."}
         
     file_path = raw_dir / filename
     
     # Ensure it doesn't escape raw_dir just in case
     try:
         if not file_path.resolve().is_relative_to(raw_dir.resolve()):
-            print("Error: Invalid filename. Path traversal detected.")
-            return
+            return {"status": "error", "message": "Invalid filename. Path traversal detected."}
     except Exception:
         pass
 
@@ -120,18 +116,15 @@ def update_or_create_file(wiki_dir: str, tier: str, filename: str, title: str, s
                 # SECURITY PATCH: Strict tag validation
                 for t in tag_list:
                     if not re.match(r'^[a-zA-Z0-9_\-]+$', t):
-                        print(f"Error: Invalid tag '{t}'. Tags can only contain alphanumeric characters, hyphens, and underscores.")
-                        return
+                        return {"status": "error", "message": f"Invalid tag '{t}'. Tags can only contain alphanumeric characters, hyphens, and underscores."}
                 frontmatter['tags'] = tag_list
             elif 'tags' in existing_frontmatter:
                 frontmatter['tags'] = existing_frontmatter['tags']
             else:
-                print("Error: --tags is required for new files. You must categorize this file into a branch/tag.")
-                return
+                return {"status": "error", "message": "--tags is required for new files. You must categorize this file into a branch/tag."}
                 
             if not frontmatter.get('tags') or 'untagged' in [t.lower() for t in frontmatter['tags']]:
-                print("Error: Files must have at least one valid tag. 'untagged' is not allowed. Please assign a proper branch/tag.")
-                return
+                return {"status": "error", "message": "Files must have at least one valid tag. 'untagged' is not allowed. Please assign a proper branch/tag."}
 
             if status == 'deprecated' and superseded_by:
                 frontmatter['superseded_by'] = superseded_by
@@ -149,12 +142,13 @@ def update_or_create_file(wiki_dir: str, tier: str, filename: str, title: str, s
             # Update manifest files safely under the same lock
             update_manifest(wiki_path, tier, relative_path)
                 
-            print(f"Successfully wrote to {file_path} and registered in {tier}_index.md")
             try_git_commit(wiki_dir, f"[Agent] Update {filename}")
+            return {"status": "success", "message": f"Successfully wrote to {file_path} and registered in {tier}_index.md", "file": str(file_path), "tier": tier}
             
     except Timeout:
-        print(f"Error: Could not acquire lock for {file_path}. Another Agent is currently modifying it.")
-        return
+        return {"status": "error", "message": f"Could not acquire lock for {file_path}. Another Agent is currently modifying it."}
+    except Exception as e:
+        return {"status": "error", "message": f"Unexpected error: {str(e)}"}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update or create a wiki file safely.")
@@ -177,13 +171,19 @@ if __name__ == "__main__":
             with open(args.source_file, 'r', encoding='utf-8') as f:
                 content = f.read()
         except Exception as e:
-            print(f"Error: Could not read source_file '{args.source_file}': {e}")
+            print(json.dumps({"status": "error", "message": f"Could not read source_file '{args.source_file}': {e}"}))
             sys.exit(1)
     elif not content or content == '-':
         if not sys.stdin.isatty():
             content = sys.stdin.read()
         else:
-            print("Error: Either --content, --source_file, or stdin must be provided.")
+            print(json.dumps({"status": "error", "message": "Either --content, --source_file, or stdin must be provided."}))
             sys.exit(1)
             
-    update_or_create_file(args.dir, args.tier, args.file, args.title, args.status, content, args.author, args.tags, args.superseded_by)
+    result = update_or_create_file(args.dir, args.tier, args.file, args.title, args.status, content, args.author, args.tags, args.superseded_by)
+    print(json.dumps(result))
+    if result and result.get("status") == "error":
+        sys.exit(1)
+    else:
+        sys.exit(0)
+
