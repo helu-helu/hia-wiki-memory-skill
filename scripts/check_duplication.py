@@ -2,48 +2,35 @@ import argparse
 import os
 import json
 from pathlib import Path
+import logging
+import sys
 
-try:
-    import chromadb
-    from chromadb.utils import embedding_functions
-    HAS_CHROMA = True
-except ImportError:
-    HAS_CHROMA = False
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s', stream=sys.stderr)
+
+from vector_stores import get_vector_store
 
 def check_duplication(wiki_dir: str, content: str, threshold: float = 0.5, top_k: int = 3):
     wiki_path = Path(wiki_dir).resolve()
-    
-    if not HAS_CHROMA:
-        return {"status": "error", "message": "chromadb is not installed. Please run: pip install -r requirements.txt"}
-        
-    db_path = wiki_path / ".chroma_db"
-    if not db_path.exists():
-        return {"status": "error", "message": "Vector DB does not exist. Please ensure files are added and search_wiki.py or rotate_wiki.py is run."}
         
     try:
-        client = chromadb.PersistentClient(path=str(db_path))
-        emb_fn = embedding_functions.DefaultEmbeddingFunction()
+        vector_store = get_vector_store(str(wiki_path))
         
-        # We don't want to create it if it doesn't exist to avoid empty checks, but get_collection throws if it doesn't.
-        # Actually get_or_create is safer.
-        collection = client.get_or_create_collection(
-            name="hia_wiki", 
-            embedding_function=emb_fn
-        )
-        
-        results = collection.query(
-            query_texts=[content],
+        docs, distances, metadatas = vector_store.search(
+            query=content,
             n_results=top_k
         )
         
         duplicates = []
-        if results['documents'] and results['documents'][0]:
-            for i in range(len(results['documents'][0])):
-                doc_id = results['ids'][0][i]
-                meta = results['metadatas'][0][i]
-                dist = results['distances'][0][i]
+        if docs:
+            for i in range(len(docs)):
+                doc_id = "N/A" # Pinecone/Chroma returned ID varies, not super critical for the summary
+                meta = metadatas[i]
+                dist = distances[i]
                 
-                # Lower distance means more similar
+                # Lower distance means more similar (for Chroma). 
+                # Note: Pinecone uses cosine similarity (higher is better). 
+                # This logic assumes distance-based threshold.
                 if dist < threshold:
                     duplicates.append({
                         "id": doc_id,
@@ -55,6 +42,7 @@ def check_duplication(wiki_dir: str, content: str, threshold: float = 0.5, top_k
                     
         return {"status": "success", "duplicates": duplicates}
     except Exception as e:
+        logger.error(f"Error checking duplication: {e}")
         return {"status": "error", "message": f"Error checking duplication: {e}"}
 
 if __name__ == "__main__":
@@ -73,10 +61,12 @@ if __name__ == "__main__":
             with open(args.source_file, 'r', encoding='utf-8') as f:
                 content = f.read()
         except Exception as e:
+            logger.error(f"Could not read source_file '{args.source_file}': {e}")
             print(json.dumps({"status": "error", "message": f"Could not read source_file '{args.source_file}': {e}"}))
             exit(1)
             
     if not content:
+        logger.error("Either --content or --source_file must be provided.")
         print(json.dumps({"status": "error", "message": "Either --content or --source_file must be provided."}))
         exit(1)
         

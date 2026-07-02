@@ -21,16 +21,7 @@ def try_git_commit(wiki_dir: str, message: str) -> str:
             return f"Git commit failed: {str(e)}"
     return ""
 
-try:
-    from filelock import FileLock, Timeout
-    HAS_FILELOCK = True
-except ImportError:
-    HAS_FILELOCK = False
-    class FileLock:
-        def __init__(self, *args, **kwargs): pass
-        def __enter__(self): return self
-        def __exit__(self, exc_type, exc_val, exc_tb): pass
-    class Timeout(Exception): pass
+from concurrency import DistributedLock, Timeout
 
 def update_manifest(wiki_path: Path, target_tier: str, relative_path: str):
     tiers = ['hot', 'warm', 'cold', 'review']
@@ -92,7 +83,7 @@ def update_or_create_file(wiki_dir: str, tier: str, filename: str, title: str, s
     relative_path = f"raw/{filename}"
     
     try:
-        with FileLock(str(lock_path), timeout=15):
+        with DistributedLock(str(lock_path), timeout=15):
             existing_frontmatter = {}
             if file_path.exists():
                 with open(file_path, 'r', encoding='utf-8') as f:

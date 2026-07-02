@@ -8,7 +8,8 @@ description: >
 # Hia Wiki Memory Skill
 
 This skill enforces a robust, token-efficient, deterministic knowledge management system for agents.
-Instead of relying on unstructured chat history, this skill uses a Flat physical storage (`raw/`) with Logical Tiering (`hot_index.md`, `warm_index.md`, `cold_index.md`) combined with a Zero-Latency Vector Database (ChromaDB) for Hybrid Search.
+Instead of relying on unstructured chat history, this skill uses a Flat physical storage (`raw/`) with Logical Tiering (`hot_index.md`, `warm_index.md`, `cold_index.md`) combined with a Zero-Latency Vector Database (ChromaDB / Pinecone) for Hybrid Search.
+This system is Cloud-Native ready, supporting Distributed Locks via Redis and an optional FastAPI Microservice (`api/main.py`).
 
 ## 🤖 Agent Identity & Dynamic Role
 When you receive this skill, you must understand two critical things about your role:
@@ -61,7 +62,7 @@ echo "Huge markdown content..." | python path/to/skill/scripts/update_wiki.py --
 ```
 
 ### 3. `search_wiki.py`
-Performs a Hybrid Semantic Search over the Wiki, using Semantic Chunking to prevent Context Bloat. Automatically skips Cold files unless `--include-cold` is provided.
+Performs a Hybrid Semantic Search over the Wiki, using Semantic Chunking to prevent Context Bloat. Automatically skips Cold files unless `--include-cold` is provided. Also utilizes **Incremental Sync** to only embed changed files, saving API costs.
 Usage: `python path/to/skill/scripts/search_wiki.py --dir <wiki_dir> --query "<search text>" --top <N> --tags "<tag_name>" [--include-cold]`
 
 ### 4. `rotate_wiki.py`

@@ -88,40 +88,42 @@ Dưới đây là cách bộ Skill tự động xử lý một file kiến thứ
 
 ---
 
-## 🛠 4. Cách Agent tự động cài đặt
+## 🛠 4. Cách cài đặt & Cấp quyền cho Agent (Tự động 100%)
 
-Bạn không cần tự thiết lập gì cả. 
+Bạn không cần phải tự gõ từng dòng lệnh hay loay hoay thiết lập thư viện. Hệ thống đã có sẵn **Setup Wizard** để tự động lo mọi thứ cho bạn.
 
-**Bước 1:** Đảm bảo máy tính đã có các thư viện nền:
-```bash
-pip install -r requirements.txt
-```
+**Bước 1: Cài đặt tự động**
+- Nếu dùng **Windows**: Chỉ cần click đúp vào file `setup/install.bat`.
+- Nếu dùng **Mac/Linux**: Chạy file `setup/install.sh` (`bash setup/install.sh`).
 
-**Bước 2:** Copy nguyên đoạn Prompt dưới đây ném cho Agent của bạn (Claude, GPT, AutoGen...):
+*Trình cài đặt sẽ tự động:*
+1. Cài đặt các thư viện Python (pip install).
+2. Hỏi bạn muốn dùng Vector DB Miễn phí (Local) hay Trả phí (Pinecone Cloud).
+3. Hỏi cấu hình Khóa Phân Tán (Redis) và tự động sinh file `.env`.
+4. Tự động tạo thư mục Bộ nhớ (`.wiki`).
 
-> *"Chào AI, đây là thư mục `hia-wiki-memory-skill`. Hệ thống này cung cấp cho bạn các công cụ Python để tự động hóa trí nhớ dài hạn. 
-> 1. Hãy đọc file `SKILL.md` để lấy danh sách các tool và hiểu về vai trò quản trị của bạn.
-> 2. Chạy `scripts/init_wiki.py --dir <thư_mục_bạn_chọn>` để hệ thống tự động bung cấu trúc thư mục (raw, manifests, branches).
-> 3. Từ nay, hãy chủ động dùng `update_wiki.py` và `search_wiki.py` để ghi nhớ và lấy lại thông tin kiến trúc dự án thay vì dựa vào trí nhớ Context mặc định.
-> 4. Hãy chủ động nhắc nhở tôi thực hiện bảo trì (`rotate_wiki.py`) khi kết thúc một tính năng lớn, và sẵn sàng mở Dashboard cho tôi xem bất cứ khi nào tôi yêu cầu."*
+**Bước 2: Cấp quyền cho AI Agent**
+Sau khi cài đặt xong, bạn chỉ cần mở file `docs/AGENT_INSTRUCTIONS.md`, copy đoạn văn bản trong đó và ném cho Agent của bạn (Claude, GPT, AutoGen, CrewAI...). Agent sẽ tự động hiểu cách sử dụng bộ não này mà bạn không cần giải thích gì thêm!
+
+*(Mở rộng cho DevOps: Bạn cũng có thể thiết lập Cloud API Server bằng Docker, vui lòng xem file `Dockerfile` có sẵn)*
 
 ---
 
-## 🌐 5. Sẵn sàng cho Multi-Agent (Quy mô Enterprise)
+## 🌐 5. Sẵn sàng cho Multi-Agent & Cloud-Native (Quy mô Enterprise)
 
-Hệ thống đã xây dựng sẵn bộ Lock vật lý (`FileLock`) nên nó chịu được môi trường Multi-Agent. Để phát huy tối đa sức mạnh mà không làm nghẽn cổ chai DB, Skill hỗ trợ hoàn hảo **Mô hình Ủy quyền (Hierarchical Proxy Pattern)**:
+Hệ thống đã xây dựng sẵn bộ Lock vật lý (`FileLock`) và **Khóa Phân Tán (Redis Lock)** nên nó chịu được môi trường Multi-Agent phân tán. Để phát huy tối đa sức mạnh mà không làm nghẽn cổ chai DB, Skill hỗ trợ hoàn hảo **Mô hình Ủy quyền (Hierarchical Proxy Pattern)** và **Kiến trúc Cloud-Native**:
 
-- Chỉ cần cấp quyền truy cập các file trong `scripts/` cho **1 Agent duy nhất** đóng vai trò **Librarian (Thủ thư)**.
-- Hàng chục Agent thợ (Worker) bên ngoài cứ việc code và test. Khi có thông tin quan trọng, chúng tự động báo cáo cho Quản lý (Main Agent). Main Agent sẽ ra lệnh cho Librarian gọi `update_wiki.py`. 
-- Mô hình này đã được chứng minh là ngăn chặn 100% rác dữ liệu ở quy mô dự án lớn.
+- **Khóa Phân Tán (Distributed Lock)**: Tự động dùng Redis nếu có `REDIS_URL`, hoặc lùi về FileLock nội bộ.
+- **Vector DB Đa nền tảng (Pluggable)**: Hỗ trợ ChromaDB (Mặc định/Local) và Pinecone (Cloud). Thay đổi linh hoạt bằng biến `VECTOR_STORE=pinecone`.
+- **Đồng bộ Tăng dần (Incremental Sync)**: Hệ thống sử dụng `.sync_state.json` để theo dõi Hash mã băm của từng file. Khi đồng bộ, chỉ các nội dung bị thay đổi mới được đẩy lên Vector DB, tiết kiệm tối đa API Cost.
+- **Mô hình Ủy quyền**: Chỉ cần cấp quyền truy cập các file trong `scripts/` cho **1 Agent duy nhất** đóng vai trò **Librarian (Thủ thư)**. Hàng chục Agent thợ (Worker) bên ngoài cứ việc code và test. Khi có thông tin quan trọng, chúng tự động báo cáo cho Quản lý (Main Agent). Main Agent sẽ ra lệnh cho Librarian gọi `update_wiki.py`. Mọi thao tác đều an toàn nhờ cơ chế Lock đa tầng.
 
 ---
 
 ## 📚 7. Tài liệu nâng cao (Advanced Guides)
 
-Nếu bạn muốn scale hệ thống này lên quy mô khổng lồ, hãy tham khảo các tài liệu chuyên sâu trong thư mục `advanced_guides/`:
-- 📖 **[platform_integration.md](advanced_guides/platform_integration.md):** Hướng dẫn chi tiết cách tích hợp Librarian Agent vào các nền tảng như OpenClaw, CrewAI, AutoGen, Claude Code (Kèm sẵn Prompt mẫu để copy-paste).
-- ☁️ **[cloud_api_migration.md](advanced_guides/cloud_api_migration.md):** Bản thiết kế kiến trúc nâng cấp từ Local Script lên Cloud API Server (Microservice) bằng FastAPI và Redis Lock.
+Nếu bạn muốn scale hệ thống này lên quy mô khổng lồ, hãy tham khảo các tài liệu chuyên sâu trong thư mục `docs/`:
+- 📖 **[platform_integration.md](docs/platform_integration.md):** Hướng dẫn chi tiết cách tích hợp Librarian Agent vào các nền tảng như OpenClaw, CrewAI, AutoGen, Claude Code (Kèm sẵn Prompt mẫu để copy-paste).
 
 ---
 
@@ -142,6 +144,20 @@ python scripts/export_memory_state.py --dir <wiki_dir>
 python scripts/build_dashboard.py --dir <wiki_dir>
 ```
 Kết quả sinh ra là một file HTML siêu đẹp hiển thị biểu đồ tròn, cột thống kê số lượng file ở các Tier. Trực quan như một ứng dụng Web thực thụ.
+
+---
+
+## 💰 9. Đánh giá Tiêu thụ Token (Token Economics)
+
+Tại sao lại cần hệ thống này trong khi bạn có thể đưa tất cả tài liệu vào Context Window của AI? Dưới đây là bài toán kinh tế giả định cho một dự án có **50 tài liệu** (trung bình 1,000 tokens/tài liệu = **50,000 tokens** tổng dung lượng bộ nhớ kiến thức).
+
+| Trạng thái (Hành vi) | ❌ Không dùng Skill (Nhồi nhét Context) | ✅ Dùng Hia Wiki Memory Skill | Mức độ Tiết kiệm |
+| :--- | :--- | :--- | :--- |
+| **Lần đầu gặp (Truy xuất kiến thức)** | Mất **50,000 tokens** ở phần Prompt để nạp toàn bộ lịch sử và tài liệu dự án cho Agent đọc. | Hệ thống sử dụng công cụ `search_wiki` (Vector RAG). Chỉ trích xuất 3 đoạn text liên quan nhất = Mất khoảng **1,500 tokens**. | Tiết kiệm **~97%** tokens khởi tạo. |
+| **Lần thứ 2 (Và các lượt chat tiếp theo)** | Do Chat History lưu lại bối cảnh cũ, mỗi tin nhắn bạn gửi đi AI phải load lại toàn bộ 50,000 tokens. Qua 10 lượt chat, bạn đốt **hơn 500,000 tokens**. | Các đoạn tài liệu lấy từ Wiki không bị kẹt vĩnh viễn trong trí nhớ. Agent chỉ tốn **~2,000 tokens** duy trì mỗi lượt. Trải qua 10 lượt chat chỉ tốn **20,000 tokens**. | Tiết kiệm **~96%** Token dài hạn (Ngăn chặn Context Bloat). |
+| **Lưu trữ dữ liệu cơ bản** | AI phải in ra toàn bộ nội dung tài liệu mới vào màn hình chat (Đốt token đầu ra Output rất đắt). Dễ bị lưu trùng lặp. | Agent gọi script `update_wiki.py` (Chỉ tốn lượng cực nhỏ Token gọi hàm). Hệ thống tự băm (Hash) và kiểm tra trùng lặp (Duplication Check). | Chi phí ghi **giảm 99%**. |
+
+> **Kết luận:** Khi dự án vượt quá 20 files, việc không sử dụng Hia Wiki Memory sẽ khiến chi phí API của bạn tăng theo cấp số nhân. Với cấu trúc *Flat Storage + Manifest Tiering*, Skill này biến bài toán chi phí từ O(N) trở thành O(1).
 
 ---
 *Built for the future of Multi-Agent Systems. Code smarter, remember forever.*

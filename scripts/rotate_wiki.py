@@ -5,17 +5,19 @@ import re
 from pathlib import Path
 from datetime import datetime
 import subprocess
+import logging
 
-try:
-    from filelock import FileLock, Timeout
-    HAS_FILELOCK = True
-except ImportError:
-    HAS_FILELOCK = False
-    class FileLock:
-        def __init__(self, *args, **kwargs): pass
-        def __enter__(self): return self
-        def __exit__(self, exc_type, exc_val, exc_tb): pass
-    class Timeout(Exception): pass
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+CONFIG = {
+    'HOT_DAYS': 7,
+    'WARM_DAYS': 90,
+    'PURGE_DAYS': 30,
+    'REVIEW_DAYS': 60
+}
+
+from concurrency import DistributedLock, Timeout
 
 def try_git_commit(wiki_dir: str, message: str):
     wiki_path = Path(wiki_dir).resolve()
@@ -23,9 +25,11 @@ def try_git_commit(wiki_dir: str, message: str):
         try:
             subprocess.run(["git", "add", "."], cwd=wiki_path, check=True, capture_output=True)
             subprocess.run(["git", "commit", "-m", message], cwd=wiki_path, check=True, capture_output=True)
-            print(f"Git auto-commit: {message}")
-        except Exception:
-            pass
+            logger.info(f"Git auto-commit: {message}")
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Git commit failed: {e.stderr}")
+        except Exception as e:
+            logger.error(f"Unexpected git error: {e}")
 
 def parse_frontmatter(file_path: Path):
     try:
@@ -38,7 +42,7 @@ def parse_frontmatter(file_path: Path):
             frontmatter = yaml.safe_load(yaml_str) or {}
             return frontmatter
     except Exception as e:
-        pass
+        logger.warning(f"Error parsing frontmatter in {file_path}: {e}")
     return None
 
 def parse_frontmatter_date(file_path: Path, frontmatter: dict = None):
@@ -57,7 +61,7 @@ def parse_frontmatter_date(file_path: Path, frontmatter: dict = None):
 def update_file_yaml(file_path: Path, updates: dict):
     try:
         lock_path = file_path.with_suffix('.md.lock')
-        with FileLock(str(lock_path), timeout=15):
+        with DistributedLock(str(lock_path), timeout=15):
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             match = re.match(r'^---\s*\n(.*?)\n---\s*\n(.*)', content, re.DOTALL)
@@ -69,7 +73,7 @@ def update_file_yaml(file_path: Path, updates: dict):
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(final_content)
     except Exception as e:
-        print(f"Failed to update YAML in {file_path}: {e}")
+        logger.error(f"Failed to update YAML in {file_path}: {e}")
 
 def get_manifest_lines(manifest_path: Path):
     if not manifest_path.exists(): return []
@@ -116,22 +120,22 @@ def process_rotation(wiki_path: Path, source_tier: str, dest_tier: str, age_limi
     files_to_move = []
     files_to_keep = []
     
-    if max_files is not None and len(files) > max_files:
-        files.sort(key=lambda x: x["age_days"], reverse=True)
-        move_count = len(files) - max_files
-        for i, file_info in enumerate(files):
-            if i < move_count and file_info["age_days"] > age_limit:
-                files_to_move.append(file_info)
-            else:
-                files_to_keep.append(file_info)
-    elif max_files is None:
+    if max_files is None:
         for file_info in files:
             if file_info["age_days"] > age_limit:
                 files_to_move.append(file_info)
             else:
                 files_to_keep.append(file_info)
     else:
-        files_to_keep = files
+        old_files = [f for f in files if f["age_days"] > age_limit]
+        new_files = [f for f in files if f["age_days"] <= age_limit]
+        
+        if len(new_files) >= max_files:
+            files_to_move = old_files + new_files[max_files:]
+            files_to_keep = new_files[:max_files]
+        else:
+            files_to_move = old_files
+            files_to_keep = new_files
         
     if files_to_move:
         new_source_lines = other_lines + [f["line"] for f in files_to_keep]
@@ -241,24 +245,29 @@ def process_rewarm(wiki_path: Path, review_days: int):
     if modified_review:
         save_manifest_lines(review_manifest, cleaned_review_lines)
 
-def rotate_wiki(wiki_dir: str, hot_days: int = 7, warm_days: int = 90, max_hot_files: int = 50, purge_days: int = 30, review_days: int = 60):
+def rotate_wiki(wiki_dir: str, hot_days: int = CONFIG['HOT_DAYS'], warm_days: int = CONFIG['WARM_DAYS'], max_hot_files: int = 50, purge_days: int = CONFIG['PURGE_DAYS'], review_days: int = CONFIG['REVIEW_DAYS']):
     wiki_path = Path(wiki_dir).resolve()
     print(f"Running Manifest rotation script for {wiki_path}")
     
-    # Process HOT to WARM
-    process_rotation(wiki_path, "hot", "warm", hot_days, max_hot_files)
-    
-    # Process WARM to COLD
-    process_rotation(wiki_path, "warm", "cold", warm_days, max_files=None)
+    lock_path = wiki_path / "manifests" / "rotate.lock"
+    try:
+        with DistributedLock(str(lock_path), timeout=10):
+            # Process HOT to WARM
+            process_rotation(wiki_path, "hot", "warm", hot_days, max_hot_files)
+            
+            # Process WARM to COLD
+            process_rotation(wiki_path, "warm", "cold", warm_days, max_files=None)
 
-    # Process Garbage Collection
-    process_garbage_collection(wiki_path, purge_days)
-    
-    # Process Rewarm Flagging
-    process_rewarm(wiki_path, review_days)
+            # Process Garbage Collection
+            process_garbage_collection(wiki_path, purge_days)
+            
+            # Process Rewarm Flagging
+            process_rewarm(wiki_path, review_days)
 
-    print("Rotation complete.")
-    try_git_commit(wiki_dir, "[Agent] Auto-rotate manifest files, GC and Rewarm")
+            print("Rotation complete.")
+            try_git_commit(wiki_dir, "[Agent] Auto-rotate manifest files, GC and Rewarm")
+    except Timeout:
+        print(f"Warning: Could not acquire lock for rotation. Another rotation is likely running.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Rotate wiki files logically using Manifest indexes.")
